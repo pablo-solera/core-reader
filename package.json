@@ -2,41 +2,44 @@
   "name": "reader-core",
   "version": "0.2.0",
   "type": "module",
+  "overrides": {
+    "@types/node": "24.19.1"
+  },
   "exports": {
     "./contract/v1": {
-      "types": "./dist/contract/v1.js",
+      "types": "./dist/contract/v1.d.ts",
       "import": "./dist/contract/v1.js"
     },
     "./http/v1": {
-      "types": "./dist/http/v1.js",
+      "types": "./dist/http/v1.d.ts",
       "import": "./dist/http/v1.js"
     },
     "./testing/conformance": {
-      "types": "./dist/testing/conformance.js",
+      "types": "./dist/testing/conformance.d.ts",
       "import": "./dist/testing/conformance.js"
     },
     "./redis/keyspace": {
-      "types": "./dist/redis/keyspace.js",
+      "types": "./dist/redis/keyspace.d.ts",
       "import": "./dist/redis/keyspace.js"
     },
     "./redis/lock": {
-      "types": "./dist/redis/lock.js",
+      "types": "./dist/redis/lock.d.ts",
       "import": "./dist/redis/lock.js"
     },
     "./jobs/state-store": {
-      "types": "./dist/jobs/state-store.js",
+      "types": "./dist/jobs/state-store.d.ts",
       "import": "./dist/jobs/state-store.js"
     },
     "./storage/s3": {
-      "types": "./dist/storage/s3.js",
+      "types": "./dist/storage/s3.d.ts",
       "import": "./dist/storage/s3.js"
     },
     "./upstream/retry": {
-      "types": "./dist/upstream/retry.js",
+      "types": "./dist/upstream/retry.d.ts",
       "import": "./dist/upstream/retry.js"
     },
     "./util/concurrency": {
-      "types": "./dist/util/concurrency.js",
+      "types": "./dist/util/concurrency.d.ts",
       "import": "./dist/util/concurrency.js"
     }
   },
@@ -47,15 +50,16 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
-    "express": "^5.1.0",
-    "zod": "^3.25.76"
+    "express": "^5.2.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.3.0",
-    "express": "^5.1.0",
-    "typescript": "^5.9.2",
-    "zod": "^3.25.76"
+    "@asteasolutions/zod-to-openapi": "9.1.0",
+    "@types/bun": "1.4.2",
+    "@types/express": "5.0.6",
+    "@types/node": "24.19.1",
+    "express": "5.2.1",
+    "typescript": "7.0.2",
+    "zod": "4.6.5"
   }
 }

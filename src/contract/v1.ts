@@ -9,7 +9,7 @@ export const errorCodeSchema = z.enum([
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
 
 export const errorBodySchema = z.object({
-  error: z.object({ code: errorCodeSchema, message: z.string(), details: z.record(z.unknown()).optional() }),
+  error: z.object({ code: errorCodeSchema, message: z.string(), details: z.record(z.string(), z.unknown()).optional() }),
 });
 export type ErrorBody = z.infer<typeof errorBodySchema>;
 
@@ -18,7 +18,7 @@ export const createRequestSchema = z.object({
   axCode: z.string().trim().min(1).optional(),
   edition: z.string().trim().min(1).optional(),
   language: z.string().trim().min(1).optional(),
-  selection: z.record(z.unknown()),
+  selection: z.record(z.string(), z.unknown()),
 });
 export type CreateRequest = z.infer<typeof createRequestSchema>;
 
@@ -47,7 +47,7 @@ export const requestStateSchema = z.object({
   request: createRequestSchema,
   artifacts: z.array(artifactSchema),
   error: z.object({ code: errorCodeSchema, message: z.string() }).nullable(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   completedAt: z.string().datetime().nullable(),
@@ -76,9 +76,9 @@ export const readerInfoSchema = z.object({
 
 export const modelOptionsSchema = z.object({
   manufacturer: z.string(),
-  appliedFilters: z.record(z.string()),
+  appliedFilters: z.record(z.string(), z.string()),
   filters: z.array(z.object({ name: z.string(), label: z.string().optional(), values: z.array(z.object({ value: z.string(), label: z.string().optional(), count: z.number().optional() })) })),
-  models: z.array(z.object({ id: z.string(), label: z.string(), attributes: z.record(z.unknown()), selection: z.record(z.unknown()) })),
+  models: z.array(z.object({ id: z.string(), label: z.string(), attributes: z.record(z.string(), z.unknown()), selection: z.record(z.string(), z.unknown()) })),
   complete: z.boolean(),
   raw: z.unknown().optional(),
 });
