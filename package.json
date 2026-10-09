@@ -10,10 +10,6 @@
       "types": "./dist/contract/v1.d.ts",
       "import": "./dist/contract/v1.js"
     },
-    "./application/*": {
-      "types": "./dist/application/*.d.ts",
-      "import": "./dist/application/*.js"
-    },
     "./application/ports/*": {
       "types": "./dist/application/ports/*.d.ts",
       "import": "./dist/application/ports/*.js"
@@ -57,10 +53,6 @@
     "./infrastructure/redis/*": {
       "types": "./dist/infrastructure/redis/*.d.ts",
       "import": "./dist/infrastructure/redis/*.js"
-    },
-    "./infrastructure/bullmq": {
-      "types": "./dist/infrastructure/bullmq/bullmq-adapter.d.ts",
-      "import": "./dist/infrastructure/bullmq/bullmq-adapter.js"
     },
     "./infrastructure/s3/*": {
       "types": "./dist/infrastructure/s3/*.d.ts",
