@@ -1,6 +1,6 @@
 {
   "name": "reader-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "overrides": {
     "@types/node": "24.19.1"
@@ -10,37 +10,73 @@
       "types": "./dist/contract/v1.d.ts",
       "import": "./dist/contract/v1.js"
     },
-    "./http/v1": {
-      "types": "./dist/http/v1.d.ts",
-      "import": "./dist/http/v1.js"
+    "./application/*": {
+      "types": "./dist/application/*.d.ts",
+      "import": "./dist/application/*.js"
+    },
+    "./application/ports/*": {
+      "types": "./dist/application/ports/*.d.ts",
+      "import": "./dist/application/ports/*.js"
+    },
+    "./domain/*": {
+      "types": "./dist/domain/*.d.ts",
+      "import": "./dist/domain/*.js"
+    },
+    "./contract/openapi": {
+      "types": "./dist/contract/openapi.d.ts",
+      "import": "./dist/contract/openapi.js"
+    },
+    "./domain/errors": {
+      "types": "./dist/domain/errors.d.ts",
+      "import": "./dist/domain/errors.js"
+    },
+    "./domain/artifact-errors": {
+      "types": "./dist/domain/artifact-errors.d.ts",
+      "import": "./dist/domain/artifact-errors.js"
+    },
+    "./domain/request-status": {
+      "types": "./dist/domain/request-status.d.ts",
+      "import": "./dist/domain/request-status.js"
+    },
+    "./shared/*": {
+      "types": "./dist/shared/*.d.ts",
+      "import": "./dist/shared/*.js"
+    },
+    "./application/v1-handlers": {
+      "types": "./dist/application/v1-handlers.d.ts",
+      "import": "./dist/application/v1-handlers.js"
+    },
+    "./application/readiness": {
+      "types": "./dist/application/readiness.d.ts",
+      "import": "./dist/application/readiness.js"
+    },
+    "./interfaces/http/express/*": {
+      "types": "./dist/interfaces/http/express/*.d.ts",
+      "import": "./dist/interfaces/http/express/*.js"
+    },
+    "./infrastructure/redis/*": {
+      "types": "./dist/infrastructure/redis/*.d.ts",
+      "import": "./dist/infrastructure/redis/*.js"
+    },
+    "./infrastructure/bullmq": {
+      "types": "./dist/infrastructure/bullmq/bullmq-adapter.d.ts",
+      "import": "./dist/infrastructure/bullmq/bullmq-adapter.js"
+    },
+    "./infrastructure/s3/*": {
+      "types": "./dist/infrastructure/s3/*.d.ts",
+      "import": "./dist/infrastructure/s3/*.js"
+    },
+    "./infrastructure/bullmq/*": {
+      "types": "./dist/infrastructure/bullmq/*.d.ts",
+      "import": "./dist/infrastructure/bullmq/*.js"
     },
     "./testing/conformance": {
       "types": "./dist/testing/conformance.d.ts",
       "import": "./dist/testing/conformance.js"
     },
-    "./redis/keyspace": {
-      "types": "./dist/redis/keyspace.d.ts",
-      "import": "./dist/redis/keyspace.js"
-    },
-    "./redis/lock": {
-      "types": "./dist/redis/lock.d.ts",
-      "import": "./dist/redis/lock.js"
-    },
-    "./jobs/state-store": {
-      "types": "./dist/jobs/state-store.d.ts",
-      "import": "./dist/jobs/state-store.js"
-    },
-    "./storage/s3": {
-      "types": "./dist/storage/s3.d.ts",
-      "import": "./dist/storage/s3.js"
-    },
-    "./upstream/retry": {
-      "types": "./dist/upstream/retry.d.ts",
-      "import": "./dist/upstream/retry.js"
-    },
-    "./util/concurrency": {
-      "types": "./dist/util/concurrency.d.ts",
-      "import": "./dist/util/concurrency.js"
+    "./infrastructure/bullmq/adapter": {
+      "types": "./dist/infrastructure/bullmq/bullmq-adapter.d.ts",
+      "import": "./dist/infrastructure/bullmq/bullmq-adapter.js"
     }
   },
   "files": ["dist", "contract/v1/openapi.yaml", "docs/contract-v1.md"],
@@ -50,15 +86,23 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
+    "bullmq": "^6.3.12",
     "express": "^5.2.1",
+    "ioredis": "^6.0.0",
     "zod": "^4.6.5"
+  },
+  "peerDependenciesMeta": {
+    "bullmq": { "optional": true },
+    "ioredis": { "optional": true }
   },
   "devDependencies": {
     "@asteasolutions/zod-to-openapi": "9.1.0",
     "@types/bun": "1.4.2",
     "@types/express": "5.0.6",
     "@types/node": "24.19.1",
+    "bullmq": "6.3.12",
     "express": "5.2.1",
+    "ioredis": "6.0.0",
     "typescript": "7.0.2",
     "zod": "4.6.5"
   }

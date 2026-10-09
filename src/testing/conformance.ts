@@ -4,7 +4,7 @@ import { errorBodySchema, v1Paths } from "../contract/v1.js";
 export type ConformanceFailure = { name: string; message: string };
 
 /** Checks the mounted Express paths against the normative v1 route inventory. */
-type RouteLayer = { route?: { path: string; methods: Record<string, boolean> }; handle?: { stack?: RouteLayer[] }; regexp?: RegExp };
+type RouteLayer = { route?: { path: string; methods: Record<string, boolean> }; handle?: { stack?: RouteLayer[] }; regexp?: RegExp; matchers?: Array<(pathname: string) => unknown> };
 
 export function collectV1Routes(app: Express | Router, prefix = ""): string[] {
   const root = app as unknown as { router?: { stack?: RouteLayer[] }; stack?: RouteLayer[] };
@@ -15,7 +15,7 @@ export function collectV1Routes(app: Express | Router, prefix = ""): string[] {
       .map(([method]) => `${method.toLowerCase()} ${prefix}${layer.route!.path.replace(/:([A-Za-z0-9_]+)/g, "{$1}")}`)
       .filter(route => route.includes("/v1/"));
     if (!layer.handle?.stack) return [];
-    const childPrefix = layer.regexp?.source.includes("\\/v1") ? "/v1" : prefix;
+    const childPrefix = mountedPrefix(layer) || prefix;
     return collectStack(layer.handle.stack, childPrefix);
   });
 }
@@ -27,10 +27,18 @@ function collectStack(stack: RouteLayer[], prefix: string): string[] {
       .map(([method]) => `${method.toLowerCase()} ${prefix}${layer.route!.path.replace(/:([A-Za-z0-9_]+)/g, "{$1}")}`)
       .filter(route => route.includes("/v1/"));
     if (!layer.handle?.stack) return [];
-    const source = layer.regexp?.source ?? "";
-    const mountedPrefix = source.includes("\\/v1") ? "/v1" : "";
-    return collectStack(layer.handle.stack, `${prefix}${mountedPrefix}`);
+    return collectStack(layer.handle.stack, `${prefix}${mountedPrefix(layer)}`);
   });
+}
+
+function mountedPrefix(layer: RouteLayer) {
+  const source = layer.regexp?.source ?? "";
+  if (source.includes("\\/v1")) return "/v1";
+  for (const path of ["/v1"]) {
+    try { if (layer.matchers?.some(matcher => Boolean(matcher(path)))) return path; }
+    catch { /* A route matcher may require a trailing slash or parameters. */ }
+  }
+  return "";
 }
 
 export function assertV1RouteInventory(app: Express | Router, prefix = ""): ConformanceFailure[] {

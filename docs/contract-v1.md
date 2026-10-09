@@ -1,6 +1,6 @@
 # Contrato Reader API v1
 
-La especificación normativa está en `contract/v1/openapi.yaml`. Las rutas y respuestas comunes se comparten entre readers; cada marca define y documenta su esquema `selection` y filtros de `/v1/models/options`. La especificación OpenAPI y la documentación de operaciones se mantienen en inglés, con tags `System`, `Info`, `Labours`, `Parts` y `Models`.
+Los schemas Zod en `src/contract/v1.ts` son la fuente de verdad del contrato y `src/contract/openapi.ts` genera OpenAPI a partir de ellos. Las rutas y respuestas comunes se comparten entre readers; cada marca define y documenta su esquema `selection` y filtros de `/v1/models/options`. La especificación OpenAPI y la documentación de operaciones se mantienen en inglés, con tags `System`, `Info`, `Labours`, `Parts` y `Models`.
 
 ## Convenciones
 
