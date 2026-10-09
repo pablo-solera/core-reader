@@ -1,0 +1,61 @@
+{
+  "name": "reader-core",
+  "version": "0.2.0",
+  "type": "module",
+  "exports": {
+    "./contract/v1": {
+      "types": "./dist/contract/v1.js",
+      "import": "./dist/contract/v1.js"
+    },
+    "./http/v1": {
+      "types": "./dist/http/v1.js",
+      "import": "./dist/http/v1.js"
+    },
+    "./testing/conformance": {
+      "types": "./dist/testing/conformance.js",
+      "import": "./dist/testing/conformance.js"
+    },
+    "./redis/keyspace": {
+      "types": "./dist/redis/keyspace.js",
+      "import": "./dist/redis/keyspace.js"
+    },
+    "./redis/lock": {
+      "types": "./dist/redis/lock.js",
+      "import": "./dist/redis/lock.js"
+    },
+    "./jobs/state-store": {
+      "types": "./dist/jobs/state-store.js",
+      "import": "./dist/jobs/state-store.js"
+    },
+    "./storage/s3": {
+      "types": "./dist/storage/s3.js",
+      "import": "./dist/storage/s3.js"
+    },
+    "./upstream/retry": {
+      "types": "./dist/upstream/retry.js",
+      "import": "./dist/upstream/retry.js"
+    },
+    "./util/concurrency": {
+      "types": "./dist/util/concurrency.js",
+      "import": "./dist/util/concurrency.js"
+    }
+  },
+  "files": ["dist", "contract/v1/openapi.yaml", "docs/contract-v1.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "express": "^5.1.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "express": "^5.1.0",
+    "typescript": "^5.9.2",
+    "zod": "^3.25.76"
+  }
+}

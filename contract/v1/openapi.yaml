@@ -1,0 +1,395 @@
+openapi: 3.0.3
+info:
+  title: Reader API v1
+  version: 1.0.0
+  description: Shared versioned API contract for manufacturer data readers.
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: System
+    description: Process liveness, dependency readiness, and API documentation.
+  - name: Info
+    description: Reader identity, supported manufacturers, and resource capabilities.
+  - name: Labours
+    description: Create, list, inspect, cancel, resume, and download labour-time extraction requests.
+  - name: Parts
+    description: Create, list, inspect, cancel, resume, and download parts extraction requests.
+  - name: Models
+    description: Discover manufacturer model hierarchies and reusable vehicle selections.
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Check process liveness
+      description: Returns success while the HTTP process is running. This endpoint does not probe external dependencies.
+      responses:
+        '200': { description: The process is alive. }
+  /ready:
+    get:
+      tags: [System]
+      summary: Check service readiness
+      description: Checks configured dependencies such as Redis, S3, and the worker heartbeat. A failed check returns 503.
+      responses:
+        '200': { description: All required dependencies are available. }
+        '503': { $ref: '#/components/responses/Error' }
+  /openapi.json:
+    get:
+      tags: [System]
+      summary: Get the OpenAPI document
+      description: Returns the reader's OpenAPI 3.0.3 specification.
+      responses:
+        '200': { description: OpenAPI specification document. }
+  /docs:
+    get:
+      tags: [System]
+      summary: Open interactive API documentation
+      description: Serves the Swagger UI for this reader's OpenAPI document.
+      responses:
+        '200': { description: Swagger UI HTML page. }
+  /v1/info:
+    get:
+      tags: [System]
+      summary: Get reader identity and capabilities
+      description: Returns reader identity, contract version, supported manufacturers, and resource capabilities.
+      responses:
+        '200':
+          description: Reader identity and capabilities.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReaderInfo' }
+  /v1/labours:
+    get:
+      tags: [Labours]
+      summary: List labour extraction requests
+      description: Returns a cursor-paginated list of labour requests retained by the reader. Filters may be combined.
+      parameters:
+        - { $ref: '#/components/parameters/Status' }
+        - { $ref: '#/components/parameters/Manufacturer' }
+        - { $ref: '#/components/parameters/AxCode' }
+        - { $ref: '#/components/parameters/Edition' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: A page of labour requests.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestPage' }
+        '400': { $ref: '#/components/responses/Error' }
+        '501': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [Labours]
+      summary: Create a labour extraction request
+      description: Validates manufacturer-specific selection criteria, queues the extraction, and returns a request ID for polling.
+      requestBody:
+        required: true
+        description: Common request fields plus a manufacturer-specific selection object.
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRequest' }
+      responses:
+        '202':
+          description: The extraction request was queued.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enqueued' }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '501': { $ref: '#/components/responses/Error' }
+  /v1/labours/{requestId}:
+    get:
+      tags: [Labours]
+      summary: Get labour extraction status
+      description: Returns the current status, progress, manufacturer selection, artifacts, and reader-specific operational details.
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      responses:
+        '200':
+          description: Current labour request state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestState' }
+        '404': { $ref: '#/components/responses/Error' }
+  /v1/labours/{requestId}/download:
+    get:
+      tags: [Labours]
+      summary: Download a labour artifact
+      description: Redirects to a short-lived signed URL. Use artifact to select a named file; prefix artifacts cannot be downloaded as single files.
+      parameters:
+        - { $ref: '#/components/parameters/RequestId' }
+        - { $ref: '#/components/parameters/Artifact' }
+      responses:
+        '307': { description: Redirect to a signed artifact URL. }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/labours/{requestId}/cancel:
+    post:
+      tags: [Labours]
+      summary: Cancel a labour extraction
+      description: Requests cancellation, stops further manufacturer calls, and removes incomplete unshared typekey prefixes from S3.
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      responses:
+        '200': { description: The request is cancelled. }
+        '202': { description: Cancellation is in progress. }
+        '409': { $ref: '#/components/responses/Error' }
+        '501': { $ref: '#/components/responses/Error' }
+  /v1/labours/{requestId}/resume:
+    post:
+      tags: [Labours]
+      summary: Resume a labour extraction
+      description: Requeues a failed or paused request from its first incomplete typekey, reusing completed data and OID checkpoints.
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force: { type: boolean, default: false }
+      responses:
+        '202': { description: The resumed extraction was queued. }
+        '409': { $ref: '#/components/responses/Error' }
+        '501': { $ref: '#/components/responses/Error' }
+  /v1/parts:
+    get:
+      tags: [Parts]
+      summary: List parts extraction requests
+      description: Returns a cursor-paginated list of parts requests when listing is supported by the reader.
+      parameters:
+        - { $ref: '#/components/parameters/Status' }
+        - { $ref: '#/components/parameters/Manufacturer' }
+        - { $ref: '#/components/parameters/AxCode' }
+        - { $ref: '#/components/parameters/Edition' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: A page of parts requests.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestPage' }
+        '501': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [Parts]
+      summary: Create a parts extraction request
+      description: Queues a manufacturer-specific parts extraction when supported.
+      requestBody:
+        required: true
+        description: Common request fields plus manufacturer-specific selection criteria.
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRequest' }
+      responses:
+        '202':
+          description: The parts extraction was queued.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enqueued' }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '501': { $ref: '#/components/responses/Error' }
+  /v1/parts/{requestId}:
+    get:
+      tags: [Parts]
+      summary: Get parts extraction status
+      description: Returns current status, progress, artifacts, and reader-specific details.
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      responses:
+        '200':
+          description: Current parts request state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestState' }
+        '404': { $ref: '#/components/responses/Error' }
+  /v1/parts/{requestId}/download:
+    get:
+      tags: [Parts]
+      summary: Download a parts artifact
+      description: Redirects to a short-lived signed URL for the primary artifact or the named artifact selected with artifact.
+      parameters:
+        - { $ref: '#/components/parameters/RequestId' }
+        - { $ref: '#/components/parameters/Artifact' }
+      responses:
+        '307': { description: Redirect to a signed artifact URL. }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/parts/{requestId}/cancel:
+    post:
+      tags: [Parts]
+      summary: Cancel a parts extraction
+      description: Requests cancellation of a queued or running parts extraction.
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      responses:
+        '200': { description: The request is cancelled. }
+        '202': { description: Cancellation is in progress. }
+        '409': { $ref: '#/components/responses/Error' }
+        '501': { $ref: '#/components/responses/Error' }
+  /v1/parts/{requestId}/resume:
+    post:
+      tags: [Parts]
+      summary: Resume a parts extraction
+      description: Requeues a failed or paused parts request when resume is supported.
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force: { type: boolean, default: false }
+      responses:
+        '202': { description: The resumed extraction was queued. }
+        '409': { $ref: '#/components/responses/Error' }
+        '501': { $ref: '#/components/responses/Error' }
+  /v1/models/options:
+    get:
+      tags: [Models]
+      summary: Get model and vehicle options
+      description: Discovers a manufacturer's model hierarchy. Apply filters progressively to retrieve the next available filter values and selectable models. Returned selections can be used in extraction requests.
+      parameters:
+        - { $ref: '#/components/parameters/Manufacturer' }
+        - name: language
+          in: query
+          schema: { type: string }
+        - name: includeRaw
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200': { description: Available filters, models, and reusable selections. }
+        '400': { $ref: '#/components/responses/Error' }
+        '502': { $ref: '#/components/responses/Error' }
+components:
+  parameters:
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Artifact:
+      name: artifact
+      in: query
+      required: false
+      schema: { type: string }
+    Status:
+      name: status
+      in: query
+      schema: { type: string, description: Comma-separated v1 request statuses. }
+    Manufacturer:
+      name: manufacturer
+      in: query
+      schema: { type: string }
+    AxCode:
+      name: axCode
+      in: query
+      schema: { type: string }
+    Edition:
+      name: edition
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+  responses:
+    Error:
+      description: Normalized API error.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorBody' }
+  schemas:
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+    ReaderInfo:
+      type: object
+      required: [reader, version, contractVersion, manufacturers, capabilities]
+      properties:
+        reader: { type: string }
+        version: { type: string }
+        contractVersion: { type: string, enum: ['1.0.0'] }
+        manufacturers: { type: array, items: { type: string } }
+        capabilities: { type: object, additionalProperties: true }
+    CreateRequest:
+      type: object
+      required: [manufacturer, selection]
+      properties:
+        manufacturer: { type: string, minLength: 1 }
+        axCode: { type: string }
+        edition: { type: string }
+        language: { type: string }
+        selection: { type: object, additionalProperties: true }
+    Artifact:
+      type: object
+      required: [name, kind, primary, location]
+      properties:
+        name: { type: string }
+        kind: { type: string, enum: [file, prefix] }
+        contentType: { type: string }
+        size: { type: integer }
+        primary: { type: boolean }
+        location:
+          type: object
+          required: [bucket, key]
+          properties:
+            bucket: { type: string }
+            key: { type: string }
+    RequestState:
+      type: object
+      required: [requestId, resource, reader, status, stage, progress, request, artifacts, error, createdAt, updatedAt, completedAt]
+      properties:
+        requestId: { type: string, format: uuid }
+        resource: { type: string, enum: [labours, parts] }
+        reader: { type: string }
+        status: { type: string, enum: [queued, running, rate_limited, paused, cancelling, cancelled, completed, failed] }
+        stage: { type: string }
+        progress: { type: integer, minimum: 0, maximum: 100, nullable: true }
+        request: { $ref: '#/components/schemas/CreateRequest' }
+        artifacts: { type: array, items: { $ref: '#/components/schemas/Artifact' } }
+        error: { type: object, nullable: true, properties: { code: { type: string }, message: { type: string } } }
+        details: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time, nullable: true }
+    Enqueued:
+      type: object
+      required: [requestId, resource, status, links]
+      properties:
+        requestId: { type: string, format: uuid }
+        resource: { type: string, enum: [labours, parts] }
+        status: { type: string, enum: [queued] }
+        links:
+          type: object
+          required: [self]
+          properties:
+            self: { type: string }
+    RequestSummary:
+      type: object
+      required: [requestId, resource, reader, status, stage, progress, request, error, createdAt, updatedAt, completedAt, artifactCount]
+      properties:
+        requestId: { type: string, format: uuid }
+        resource: { type: string, enum: [labours, parts] }
+        reader: { type: string }
+        status: { type: string, enum: [queued, running, rate_limited, paused, cancelling, cancelled, completed, failed] }
+        stage: { type: string }
+        progress: { type: integer, nullable: true, minimum: 0, maximum: 100 }
+        request: { $ref: '#/components/schemas/CreateRequest' }
+        error: { type: object, nullable: true, properties: { code: { type: string }, message: { type: string } } }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time, nullable: true }
+        artifactCount: { type: integer, minimum: 0 }
+    RequestPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/RequestSummary' } }
+        nextCursor: { type: string, nullable: true }
