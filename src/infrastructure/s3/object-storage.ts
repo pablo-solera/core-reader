@@ -43,9 +43,11 @@ export class S3Store implements ObjectStorage, BucketProvisioner {
     let deleted = 0;
     do {
       const page = await this.options.adapter.list(prefix, continuationToken);
-      for (let index = 0; index < page.keys.length; index += batchSize) {
-        const batch = page.keys.slice(index, index + batchSize);
-        await Promise.all(batch.map(key => this.options.adapter.deleteObject(key)));
+      const deleteBatchSize = this.options.adapter.deleteObjects ? 1000 : batchSize;
+      for (let index = 0; index < page.keys.length; index += deleteBatchSize) {
+        const batch = page.keys.slice(index, index + deleteBatchSize);
+        if (this.options.adapter.deleteObjects) await this.options.adapter.deleteObjects(batch);
+        else await Promise.all(batch.map(key => this.options.adapter.deleteObject(key)));
         deleted += batch.length;
       }
       continuationToken = page.nextToken;

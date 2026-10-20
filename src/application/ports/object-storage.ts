@@ -7,6 +7,7 @@ export interface ObjectStorage {
   signGet(key: string, expiresInSeconds: number): Promise<string>;
   list(prefix: string, continuationToken?: string): Promise<ObjectPage>;
   deleteObject(key: string): Promise<void>;
+  deleteObjects?(keys: string[]): Promise<void>;
 }
 
 export interface BucketProvisioner {

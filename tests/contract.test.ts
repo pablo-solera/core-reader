@@ -5,6 +5,7 @@ import { createV1Router } from "../src/interfaces/http/express/v1-router.js";
 import { assertV1RouteInventory } from "../src/testing/conformance.js";
 import express from "express";
 import { RedisStateStore, type StateRedis } from "../src/infrastructure/redis/state-store.js";
+import { S3Store, type S3Adapter } from "../src/infrastructure/s3/object-storage.js";
 
 describe("reader API v1 contract", () => {
   test("validates common request fields and keeps manufacturer selection open", () => {
@@ -91,5 +92,32 @@ describe("reader API v1 contract", () => {
     current = { ...current, status: "cancelling" };
     expect(await store.patch("job", { status: "rate-limited" }, [], { status: "downloading" })).toBeNull();
     expect(current.status).toBe("cancelling");
+  });
+
+  test("bulk-deletes S3 prefixes in provider-sized batches and keeps the adapter fallback", async () => {
+    const batchSizes: number[] = [];
+    let individualDeletes = 0;
+    const adapter: S3Adapter = {
+      async headBucket() {},
+      async putObject() {},
+      async getObject() { return undefined; },
+      async signGet() { return "url"; },
+      async list() { return { keys: Array.from({ length: 1101 }, (_, index) => `prefix/${index}`) }; },
+      async deleteObject() { individualDeletes++; },
+      async deleteObjects(keys) { batchSizes.push(keys.length); },
+    };
+    const store = new S3Store({ adapter });
+    expect(await store.deletePrefix("prefix", value => value === "prefix")).toBe(1101);
+    expect(batchSizes).toEqual([1000, 101]);
+    expect(individualDeletes).toBe(0);
+
+    const fallbackDeletes: string[] = [];
+    const fallback: S3Adapter = {
+      async headBucket() {}, async putObject() {}, async getObject() { return undefined; }, async signGet() { return "url"; },
+      async list() { return { keys: ["prefix/a", "prefix/b"] }; },
+      async deleteObject(key) { fallbackDeletes.push(key); },
+    };
+    await new S3Store({ adapter: fallback }).deletePrefix("prefix", () => true);
+    expect(fallbackDeletes).toEqual(["prefix/a", "prefix/b"]);
   });
 });
