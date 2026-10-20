@@ -18,7 +18,7 @@ local function protectEmptyArrays(value, sentinel)
     if in_string then
       table.insert(output, char)
       if escaped then escaped = false
-      elseif char == '\\' then escaped = true
+      elseif char == '\\\\' then escaped = true
       elseif char == '"' then in_string = false end
       index = index + 1
     elseif char == '"' then
