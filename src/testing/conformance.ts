@@ -9,15 +9,7 @@ type RouteLayer = { route?: { path: string; methods: Record<string, boolean> }; 
 export function collectV1Routes(app: Express | Router, prefix = ""): string[] {
   const root = app as unknown as { router?: { stack?: RouteLayer[] }; stack?: RouteLayer[] };
   const stack = root.router?.stack ?? root.stack ?? [];
-  return stack.flatMap(layer => {
-    if (layer.route) return Object.entries(layer.route.methods)
-      .filter(([, enabled]) => enabled)
-      .map(([method]) => `${method.toLowerCase()} ${prefix}${layer.route!.path.replace(/:([A-Za-z0-9_]+)/g, "{$1}")}`)
-      .filter(route => route.includes("/v1/"));
-    if (!layer.handle?.stack) return [];
-    const childPrefix = mountedPrefix(layer) || prefix;
-    return collectStack(layer.handle.stack, childPrefix);
-  });
+  return collectStack(stack, prefix);
 }
 
 function collectStack(stack: RouteLayer[], prefix: string): string[] {

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { requestStatuses, type RequestStatus } from "../domain/request-status.js";
+export type { RequestStatus } from "../domain/request-status.js";
 
 extendZodWithOpenApi(z);
 
@@ -27,8 +29,7 @@ export type CreateRequest = z.infer<typeof createRequestSchema>;
 
 export const resourceSchema = z.enum(["labours", "parts"]);
 export type Resource = z.infer<typeof resourceSchema>;
-export const requestStatusSchema = z.enum(["queued", "running", "rate_limited", "paused", "cancelling", "cancelled", "completed", "failed"]);
-export type RequestStatus = z.infer<typeof requestStatusSchema>;
+export const requestStatusSchema = z.enum(requestStatuses);
 
 export const artifactSchema = z.object({
   name: z.string().min(1),

@@ -68,30 +68,40 @@ describe("reader API v1 contract", () => {
     expect(missing).toEqual([]);
   });
 
-  test("state patches carry empty-array preservation and compare guards to the atomic Redis script", async () => {
-    const calls: Array<{ script: string; args: Array<string | number> }> = [];
-    let current = { updatedAt: "before", status: "queued", typekeyPaths: ["one"] as string[] };
+  test("state patches preserve arrays and compare guards across optimistic Redis retries", async () => {
+    let current = { updatedAt: "before", status: "queued", stage: "queued", typekeyPaths: ["one"] as string[] };
+    let staged: string | undefined;
+    let conflictOnce = true;
+    let unwatchCount = 0;
     const redis: StateRedis = {
       async get() { return JSON.stringify(current); },
       async set() { return "OK"; },
-      async eval(script, _keyCount, ...args) {
-        calls.push({ script, args });
-        const conditions = JSON.parse(String(args[5])) as Record<string, unknown>;
-        if (Object.entries(conditions).some(([key, value]) => current[key as keyof typeof current] !== value)) return false;
-        current = { ...current, ...JSON.parse(String(args[1])), updatedAt: String(args[3]) };
-        return JSON.stringify(current);
+      async watch() { return "OK"; },
+      async unwatch() { unwatchCount++; return "OK"; },
+      multi() {
+        return {
+          set(_key, value) { staged = value; return this; },
+          async exec() {
+            if (conflictOnce) {
+              conflictOnce = false;
+              current = { ...current, stage: "external-update" };
+              return null;
+            }
+            current = JSON.parse(staged!) as typeof current;
+            return [[null, "OK"]];
+          },
+        };
       },
     };
-    const store = new RedisStateStore<{ updatedAt: string; status: string; typekeyPaths: string[] }>(redis, id => `state:${id}`, 60);
+    const store = new RedisStateStore<{ updatedAt: string; status: string; stage: string; typekeyPaths: string[] }>(redis, id => `state:${id}`, 60);
     const updated = await store.patch("job", { typekeyPaths: [] }, [], { status: "queued" });
     expect(updated?.typekeyPaths).toEqual([]);
-    expect(calls[0]?.script).toContain("protectEmptyArrays");
-    expect(calls[0]?.script).toContain("return false");
-    expect(JSON.parse(String(calls[0]?.args[5]))).toEqual({ status: "queued" });
-    expect(String(calls[0]?.args[6])).toMatch(/^[\da-f-]{36}$/);
+    expect(updated?.stage).toBe("external-update");
+    expect(updated?.updatedAt).not.toBe("before");
     current = { ...current, status: "cancelling" };
     expect(await store.patch("job", { status: "rate-limited" }, [], { status: "downloading" })).toBeNull();
     expect(current.status).toBe("cancelling");
+    expect(unwatchCount).toBe(1);
   });
 
   test("bulk-deletes S3 prefixes in provider-sized batches and keeps the adapter fallback", async () => {

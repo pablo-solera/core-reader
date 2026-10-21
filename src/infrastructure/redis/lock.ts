@@ -10,18 +10,9 @@ const renewLeaseScript = "if redis.call('GET', KEYS[1]) == ARGV[1] then return r
 export class RedisLeaseLock implements LeaseLock {
   constructor(private readonly client: RedisLockClient) {}
 
-  acquire(key: string, token: string, ttlMs: number) { return acquireLease(this.client, key, token, ttlMs); }
+  async acquire(key: string, token: string, ttlMs: number) { return Number(await this.client.eval(acquireLeaseScript, 1, key, token, ttlMs)) === 1; }
   async renew(key: string, token: string, ttlMs: number) { return Number(await this.client.eval(renewLeaseScript, 1, key, token, ttlMs)) === 1; }
-  async release(key: string, token: string) { return releaseLease(this.client, key, token); }
+  async release(key: string, token: string) { return Number(await this.client.eval(releaseScript, 1, key, token)) === 1; }
 }
-
 
 const releaseScript = "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end";
-
-export async function acquireLease(client: RedisLockClient, key: string, token: string, ttlMs: number): Promise<boolean> {
-  return Number(await client.eval(acquireLeaseScript, 1, key, token, ttlMs)) === 1;
-}
-
-export async function releaseLease(client: RedisLockClient, key: string, token: string): Promise<boolean> {
-  return Number(await client.eval(releaseScript, 1, key, token)) === 1;
-}

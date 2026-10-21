@@ -1,4 +1,5 @@
 import express, { Router, type Request, type RequestHandler, type Response } from "express";
+import { z } from "zod";
 import { capabilitiesSchema, contractVersion, createRequestSchema, requestStatusSchema, type Capability, type ReaderCapabilities, type ReaderInfo, type Resource } from "../../../contract/v1.js";
 import type { V1Handlers, ResourceHandlers } from "../../../application/v1-handlers.js";
 import { ConflictError, NotFoundError, NotSupportedError, ValidationError } from "../../../domain/errors.js";
@@ -39,15 +40,7 @@ function requireRequestId(value: string) {
 function asString(value: unknown): string | undefined { return typeof value === "string" ? value : undefined; }
 function paramString(value: string | string[] | undefined): string { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
 
-const forceSchema = expressForceSchema();
-function expressForceSchema() {
-  return { parse(value: unknown): { force: boolean } {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("resume body must be an object");
-    const force = (value as Record<string, unknown>).force;
-    if (force !== undefined && typeof force !== "boolean") throw new ValidationError("force must be a boolean");
-    return { force: force ?? false };
-  } };
-}
+const forceSchema = z.object({ force: z.boolean().default(false) });
 
 export function createV1Router(options: V1RouterOptions): Router {
   const router = Router();

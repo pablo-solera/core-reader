@@ -44,15 +44,6 @@ export async function createBullMqQueue<TData = unknown, TResult = unknown>(name
   return new Queue<TData, TResult, string>(name, options) as unknown as BullMqQueueClient<TData, TResult>;
 }
 
-export async function createBullMqJobWorker<TData, TResult>(
-  queueName: string,
-  processor: BullMqWorkerProcessor<TData, TResult>,
-  options: import("bullmq").WorkerOptions,
-): Promise<import("bullmq").Worker<TData, TResult>> {
-  const { Worker } = await import("bullmq");
-  return new Worker<TData, TResult>(queueName, processor, options);
-}
-
 export async function createBullMqWorker<TData, TResult>(queueName: string, processor: BullMqWorkerProcessor<TData, TResult>, options: import("bullmq").WorkerOptions) {
   const { Worker } = await import("bullmq");
   return new Worker<TData, TResult>(queueName, processor, options);

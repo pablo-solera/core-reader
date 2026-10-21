@@ -22,18 +22,6 @@
       "types": "./dist/contract/openapi.d.ts",
       "import": "./dist/contract/openapi.js"
     },
-    "./domain/errors": {
-      "types": "./dist/domain/errors.d.ts",
-      "import": "./dist/domain/errors.js"
-    },
-    "./domain/artifact-errors": {
-      "types": "./dist/domain/artifact-errors.d.ts",
-      "import": "./dist/domain/artifact-errors.js"
-    },
-    "./domain/request-status": {
-      "types": "./dist/domain/request-status.d.ts",
-      "import": "./dist/domain/request-status.js"
-    },
     "./shared/*": {
       "types": "./dist/shared/*.d.ts",
       "import": "./dist/shared/*.js"
@@ -77,6 +65,9 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "9.1.0"
+  },
   "peerDependencies": {
     "bullmq": "^6.3.12",
     "express": "^5.2.1",
@@ -88,7 +79,6 @@
     "ioredis": { "optional": true }
   },
   "devDependencies": {
-    "@asteasolutions/zod-to-openapi": "9.1.0",
     "@types/bun": "1.4.2",
     "@types/express": "5.0.6",
     "@types/node": "24.19.1",

@@ -1,29 +1,27 @@
-import type { Artifact, CreateRequest, ModelOptions, RequestPage, RequestState, RequestSummary } from "../contract/v1.js";
+import type { CreateRequest, ModelOptions, RequestPage, RequestState } from "../contract/v1.js";
 
 export type ListRequestQuery = { status?: string[]; manufacturer?: string; axCode?: string; edition?: string; limit: number; cursor?: string };
 export type CancelRequestResult = { status: "cancelled" | "cancelling"; body: unknown };
 
-export interface CreateRequestHandler { execute(request: CreateRequest): Promise<{ requestId: string }>; }
-export interface ListRequestsHandler { execute(query: ListRequestQuery): Promise<RequestPage>; }
-export interface GetRequestHandler { execute(requestId: string): Promise<RequestState | null>; }
-export interface DownloadArtifactHandler { execute(requestId: string, artifact?: string): Promise<string>; }
-export interface CancelRequestHandler { execute(requestId: string): Promise<CancelRequestResult>; }
-export interface ResumeRequestHandler { execute(requestId: string, force: boolean): Promise<unknown>; }
-export interface ModelOptionsHandler { execute(query: Record<string, unknown>): Promise<ModelOptions>; }
+export type CreateRequestHandler = (request: CreateRequest) => Promise<{ requestId: string }>;
+export type ListRequestsHandler = (query: ListRequestQuery) => Promise<RequestPage>;
+export type GetRequestHandler = (requestId: string) => Promise<RequestState | null>;
+export type DownloadArtifactHandler = (requestId: string, artifact?: string) => Promise<string>;
+export type CancelRequestHandler = (requestId: string) => Promise<CancelRequestResult>;
+export type ResumeRequestHandler = (requestId: string, force: boolean) => Promise<unknown>;
+export type ModelOptionsHandler = (query: Record<string, unknown>) => Promise<ModelOptions>;
 
 export type ResourceHandlers = {
-  create?: CreateRequestHandler["execute"];
-  list?: ListRequestsHandler["execute"];
-  get?: GetRequestHandler["execute"];
-  download?: DownloadArtifactHandler["execute"];
-  cancel?: CancelRequestHandler["execute"];
-  resume?: ResumeRequestHandler["execute"];
+  create?: CreateRequestHandler;
+  list?: ListRequestsHandler;
+  get?: GetRequestHandler;
+  download?: DownloadArtifactHandler;
+  cancel?: CancelRequestHandler;
+  resume?: ResumeRequestHandler;
 };
 
 export type V1Handlers = {
   labours?: ResourceHandlers;
   parts?: ResourceHandlers;
-  modelsOptions?: ModelOptionsHandler["execute"];
+  modelsOptions?: ModelOptionsHandler;
 };
-
-export type V1HandlerResult = RequestState | RequestPage | RequestSummary | Artifact | ModelOptions | unknown;
