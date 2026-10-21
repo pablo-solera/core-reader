@@ -1,14 +1,17 @@
-export type ApplicationErrorCode =
-  | "VALIDATION_ERROR"
-  | "NOT_FOUND"
-  | "CONFLICT"
-  | "NOT_READY"
-  | "NOT_DOWNLOADABLE"
-  | "PAYLOAD_TOO_LARGE"
-  | "NOT_SUPPORTED"
-  | "UPSTREAM_ERROR"
-  | "UNAVAILABLE"
-  | "INTERNAL_ERROR";
+export const applicationErrorCodes = [
+  "VALIDATION_ERROR",
+  "NOT_FOUND",
+  "CONFLICT",
+  "NOT_READY",
+  "NOT_DOWNLOADABLE",
+  "PAYLOAD_TOO_LARGE",
+  "NOT_SUPPORTED",
+  "UPSTREAM_ERROR",
+  "UNAVAILABLE",
+  "INTERNAL_ERROR",
+] as const;
+
+export type ApplicationErrorCode = (typeof applicationErrorCodes)[number];
 
 export class ApplicationError extends Error {
   constructor(readonly code: ApplicationErrorCode, message: string, readonly details?: Record<string, unknown>, options?: ErrorOptions) {

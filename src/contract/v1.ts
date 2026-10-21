@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { applicationErrorCodes, type ApplicationErrorCode } from "../domain/errors.js";
 import { requestStatuses, type RequestStatus } from "../domain/request-status.js";
 export type { RequestStatus } from "../domain/request-status.js";
 
@@ -7,11 +8,8 @@ extendZodWithOpenApi(z);
 
 export const contractVersion = "1.0.0" as const;
 
-export const errorCodeSchema = z.enum([
-  "VALIDATION_ERROR", "NOT_FOUND", "CONFLICT", "NOT_READY", "NOT_DOWNLOADABLE",
-  "PAYLOAD_TOO_LARGE", "NOT_SUPPORTED", "UPSTREAM_ERROR", "UNAVAILABLE", "INTERNAL_ERROR",
-]);
-export type ErrorCode = z.infer<typeof errorCodeSchema>;
+export const errorCodeSchema = z.enum(applicationErrorCodes);
+export type ErrorCode = ApplicationErrorCode;
 
 export const errorBodySchema = z.object({
   error: z.object({ code: errorCodeSchema, message: z.string(), details: z.record(z.string(), z.unknown()).optional() }),
