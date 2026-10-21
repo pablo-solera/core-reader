@@ -41,13 +41,25 @@ export class S3Store implements ObjectStorage, BucketProvisioner {
     if (!validate(prefix)) throw new Error("Refusing to delete an invalid object prefix");
     let continuationToken: string | undefined;
     let deleted = 0;
+    let bulkDeleteAvailable = Boolean(this.options.adapter.deleteObjects);
     do {
       const page = await this.options.adapter.list(prefix, continuationToken);
-      const deleteBatchSize = this.options.adapter.deleteObjects ? 1000 : batchSize;
+      const deleteBatchSize = bulkDeleteAvailable ? 1000 : batchSize;
       for (let index = 0; index < page.keys.length; index += deleteBatchSize) {
         const batch = page.keys.slice(index, index + deleteBatchSize);
-        if (this.options.adapter.deleteObjects) await this.options.adapter.deleteObjects(batch);
-        else await Promise.all(batch.map(key => this.options.adapter.deleteObject(key)));
+        if (bulkDeleteAvailable && this.options.adapter.deleteObjects) {
+          try { await this.options.adapter.deleteObjects(batch); }
+          catch (bulkError) {
+            bulkDeleteAvailable = false;
+            try {
+              for (let offset = 0; offset < batch.length; offset += batchSize) {
+                await Promise.all(batch.slice(offset, offset + batchSize).map(key => this.options.adapter.deleteObject(key)));
+              }
+            } catch (individualError) {
+              throw new AggregateError([bulkError, individualError], `Bulk and individual S3 deletion failed for prefix ${prefix}`);
+            }
+          }
+        } else await Promise.all(batch.map(key => this.options.adapter.deleteObject(key)));
         deleted += batch.length;
       }
       continuationToken = page.nextToken;

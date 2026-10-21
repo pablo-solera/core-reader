@@ -119,5 +119,17 @@ describe("reader API v1 contract", () => {
     };
     await new S3Store({ adapter: fallback }).deletePrefix("prefix", () => true);
     expect(fallbackDeletes).toEqual(["prefix/a", "prefix/b"]);
+
+    const failedBulkSizes: number[] = [];
+    const retriedDeletes: string[] = [];
+    const incompatible: S3Adapter = {
+      async headBucket() {}, async putObject() {}, async getObject() { return undefined; }, async signGet() { return "url"; },
+      async list() { return { keys: Array.from({ length: 1025 }, (_, index) => `prefix/${index}`) }; },
+      async deleteObject(key) { retriedDeletes.push(key); },
+      async deleteObjects(keys) { failedBulkSizes.push(keys.length); throw new Error("Content-MD5 required"); },
+    };
+    expect(await new S3Store({ adapter: incompatible }).deletePrefix("prefix", () => true)).toBe(1025);
+    expect(failedBulkSizes).toEqual([1000]);
+    expect(retriedDeletes).toHaveLength(1025);
   });
 });
