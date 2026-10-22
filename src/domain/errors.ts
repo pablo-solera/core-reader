@@ -6,6 +6,7 @@ export const applicationErrorCodes = [
   "NOT_DOWNLOADABLE",
   "PAYLOAD_TOO_LARGE",
   "NOT_SUPPORTED",
+  "NOT_AVAILABLE",
   "UPSTREAM_ERROR",
   "UNAVAILABLE",
   "INTERNAL_ERROR",
@@ -26,5 +27,6 @@ export class ConflictError extends ApplicationError { constructor(message: strin
 export class NotReadyError extends ApplicationError { constructor(message: string, details?: Record<string, unknown>) { super("NOT_READY", message, details); } }
 export class NotDownloadableError extends ApplicationError { constructor(message: string, details?: Record<string, unknown>) { super("NOT_DOWNLOADABLE", message, details); } }
 export class NotSupportedError extends ApplicationError { constructor(message: string, details?: Record<string, unknown>) { super("NOT_SUPPORTED", message, details); } }
+export class NotAvailableError extends ApplicationError { constructor(message: string, details?: Record<string, unknown>) { super("NOT_AVAILABLE", message, details); } }
 export class UpstreamError extends ApplicationError { constructor(message: string, details?: Record<string, unknown>, options?: ErrorOptions) { super("UPSTREAM_ERROR", message, details, options); } }
 export class UnavailableError extends ApplicationError { constructor(message: string, details?: Record<string, unknown>, options?: ErrorOptions) { super("UNAVAILABLE", message, details, options); } }

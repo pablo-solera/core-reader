@@ -8,7 +8,7 @@ Los schemas Zod en `src/contract/v1.ts` son la fuente de verdad del contrato y `
 - La retirada de rutas sin versión es directa, sin alias temporal.
 - Requests y responses de negocio usan JSON. Los IDs son UUID.
 - Los errores usan `{ "error": { "code": "...", "message": "...", "details": {} } }`.
-- Códigos comunes: `VALIDATION_ERROR` (400), `NOT_FOUND` (404), `CONFLICT`/`NOT_READY`/`NOT_DOWNLOADABLE` (409), `PAYLOAD_TOO_LARGE` (413), `NOT_SUPPORTED` (501), `UPSTREAM_ERROR` (502), `UNAVAILABLE` (503), `INTERNAL_ERROR` (500).
+- Códigos comunes: `VALIDATION_ERROR` (400), `NOT_FOUND` (404), `CONFLICT`/`NOT_READY`/`NOT_DOWNLOADABLE` (409), `PAYLOAD_TOO_LARGE` (413), `NOT_SUPPORTED` (501), `NOT_AVAILABLE` (422, el fabricante no ofrece datos para el modelo o typekey solicitado), `UPSTREAM_ERROR` (502), `UNAVAILABLE` (503), `INTERNAL_ERROR` (500).
 - Los identificadores, estados y parámetros tienen semántica común; `stage`, `details` y `selection` pueden ser propios de marca.
 
 ## Recursos

@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { createRequestSchema, errorBodySchema, toRequestStatus, v1Paths } from "../src/contract/v1.js";
 import { generateOpenApiV1 } from "../src/contract/openapi.js";
+import { NotAvailableError } from "../src/domain/errors.js";
+import { mapApplicationError } from "../src/interfaces/http/express/error-middleware.js";
 import { createV1Router } from "../src/interfaces/http/express/v1-router.js";
 import { assertV1RouteInventory } from "../src/testing/conformance.js";
 import express from "express";
@@ -20,6 +22,12 @@ describe("reader API v1 contract", () => {
 
   test("normalizes errors with stable code and message fields", () => {
     expect(errorBodySchema.parse({ error: { code: "NOT_READY", message: "Not ready", details: { status: "queued" } } })).toBeTruthy();
+  });
+
+  test("maps NOT_AVAILABLE to HTTP 422 with structured details", () => {
+    const mapped = mapApplicationError(new NotAvailableError("Typekey is not available", { typekeys: [{ typekey: "YM13" }] }));
+    expect(mapped).toEqual({ code: "NOT_AVAILABLE", status: 422, message: "Typekey is not available", details: { typekeys: [{ typekey: "YM13" }] } });
+    expect(errorBodySchema.parse({ error: { code: "NOT_AVAILABLE", message: "x" } })).toBeTruthy();
   });
 
   test("mounts the normative v1 route inventory", () => {
