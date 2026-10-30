@@ -1,9 +1,10 @@
 {
-  "name": "@solera/core-reader",
-  "publishConfig": {
-    "registry": "http://artifactory-peuwaxprvdacc03.axadmin.net/repository/npm-hosted/"
-  },
-  "version": "0.3.0",
+  "name": "@pablosla/core-reader",
+  "version": "0.3.1",
+  "description": "Shared contract, ports and infrastructure adapters (Express, BullMQ, Redis, S3) for the manufacturer readers.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/pablo-solera/core-reader.git" },
+  "publishConfig": { "access": "public" },
   "type": "module",
   "overrides": {
     "@types/node": "24.19.1"
@@ -64,6 +65,7 @@
   },
   "files": [
     "dist",
+    "src",
     "contract/v1/openapi.yaml",
     "docs/contract-v1.md"
   ],
