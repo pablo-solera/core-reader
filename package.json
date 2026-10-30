@@ -1,5 +1,8 @@
 {
-  "name": "reader-core",
+  "name": "@solera/core-reader",
+  "publishConfig": {
+    "registry": "http://artifactory-peuwaxprvdacc03.axadmin.net/repository/npm-hosted/"
+  },
   "version": "0.3.0",
   "type": "module",
   "overrides": {
@@ -59,11 +62,16 @@
       "import": "./dist/infrastructure/bullmq/bullmq-adapter.js"
     }
   },
-  "files": ["dist", "contract/v1/openapi.yaml", "docs/contract-v1.md"],
+  "files": [
+    "dist",
+    "contract/v1/openapi.yaml",
+    "docs/contract-v1.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "9.1.0"
@@ -75,8 +83,12 @@
     "zod": "^4.6.5"
   },
   "peerDependenciesMeta": {
-    "bullmq": { "optional": true },
-    "ioredis": { "optional": true }
+    "bullmq": {
+      "optional": true
+    },
+    "ioredis": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
