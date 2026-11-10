@@ -1,6 +1,6 @@
 {
   "name": "@pablosla/core-reader",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Shared contract, ports and infrastructure adapters (Express, BullMQ, Redis, S3) for the manufacturer readers.",
   "license": "MIT",
   "repository": {
