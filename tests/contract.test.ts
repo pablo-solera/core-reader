@@ -40,6 +40,36 @@ describe("reader API v1 contract", () => {
     expect(v1Paths).toHaveLength(14);
   });
 
+  test("serves static or lazily resolved manufacturers in /v1/info", async () => {
+    const serve = async (manufacturers: string[] | (() => Promise<string[]>)) => {
+      const app = express();
+      app.use("/v1", createV1Router({ reader: "test", version: "0.1.0", manufacturers, handlers: {} }));
+      const server = app.listen(0, "127.0.0.1");
+      await new Promise(resolve => server.once("listening", resolve));
+      try {
+        const { port } = server.address() as { port: number };
+        return await (await fetch(`http://127.0.0.1:${port}/v1/info`)).json() as { manufacturers: string[] };
+      } finally { server.close(); }
+    };
+    expect((await serve(["A"])).manufacturers).toEqual(["A"]);
+    let calls = 0;
+    expect((await serve(async () => { calls++; return ["B", "C"]; })).manufacturers).toEqual(["B", "C"]);
+    expect(calls).toBe(1);
+  });
+
+  test("falls back to an empty manufacturer list when the lazy source fails", async () => {
+    const app = express();
+    app.use("/v1", createV1Router({ reader: "test", version: "0.1.0", manufacturers: async () => { throw new Error("upstream down"); }, handlers: {} }));
+    const server = app.listen(0, "127.0.0.1");
+    await new Promise(resolve => server.once("listening", resolve));
+    try {
+      const { port } = server.address() as { port: number };
+      const response = await fetch(`http://127.0.0.1:${port}/v1/info`);
+      expect(response.status).toBe(200);
+      expect((await response.json() as { manufacturers: string[] }).manufacturers).toEqual([]);
+    } finally { server.close(); }
+  });
+
   test("documents the full route surface and supports brand schemas", () => {
     const spec = generateOpenApiV1({ title: "BMW Reader API", version: "1.0.0", serverUrl: "http://localhost:3004", selectionSchemas: { BmwSelection: { type: "object" } } });
     expect(Object.keys(spec.paths)).toHaveLength(16);
