@@ -51,6 +51,10 @@
       "types": "./dist/interfaces/http/express/*.d.ts",
       "import": "./dist/interfaces/http/express/*.js"
     },
+    "./infrastructure/auth/*": {
+      "types": "./dist/infrastructure/auth/*.d.ts",
+      "import": "./dist/infrastructure/auth/*.js"
+    },
     "./infrastructure/redis/*": {
       "types": "./dist/infrastructure/redis/*.d.ts",
       "import": "./dist/infrastructure/redis/*.js"
