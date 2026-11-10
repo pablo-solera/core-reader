@@ -5,6 +5,7 @@ import { NotAvailableError } from "../src/domain/errors.js";
 import { mapApplicationError } from "../src/interfaces/http/express/error-middleware.js";
 import { createV1Router } from "../src/interfaces/http/express/v1-router.js";
 import { assertV1RouteInventory } from "../src/testing/conformance.js";
+import { z } from "zod";
 import express from "express";
 import { RedisStateStore, type StateRedis } from "../src/infrastructure/redis/state-store.js";
 import { S3Store, type S3Adapter } from "../src/infrastructure/s3/object-storage.js";
@@ -39,12 +40,52 @@ describe("reader API v1 contract", () => {
     expect(v1Paths).toHaveLength(14);
   });
 
+  test("serves static or lazily resolved manufacturers in /v1/info", async () => {
+    const serve = async (manufacturers: string[] | (() => Promise<string[]>)) => {
+      const app = express();
+      app.use("/v1", createV1Router({ reader: "test", version: "0.1.0", manufacturers, handlers: {} }));
+      const server = app.listen(0, "127.0.0.1");
+      await new Promise(resolve => server.once("listening", resolve));
+      try {
+        const { port } = server.address() as { port: number };
+        return await (await fetch(`http://127.0.0.1:${port}/v1/info`)).json() as { manufacturers: string[] };
+      } finally { server.close(); }
+    };
+    expect((await serve(["A"])).manufacturers).toEqual(["A"]);
+    let calls = 0;
+    expect((await serve(async () => { calls++; return ["B", "C"]; })).manufacturers).toEqual(["B", "C"]);
+    expect(calls).toBe(1);
+  });
+
+  test("falls back to an empty manufacturer list when the lazy source fails", async () => {
+    const app = express();
+    app.use("/v1", createV1Router({ reader: "test", version: "0.1.0", manufacturers: async () => { throw new Error("upstream down"); }, handlers: {} }));
+    const server = app.listen(0, "127.0.0.1");
+    await new Promise(resolve => server.once("listening", resolve));
+    try {
+      const { port } = server.address() as { port: number };
+      const response = await fetch(`http://127.0.0.1:${port}/v1/info`);
+      expect(response.status).toBe(200);
+      expect((await response.json() as { manufacturers: string[] }).manufacturers).toEqual([]);
+    } finally { server.close(); }
+  });
+
   test("documents the full route surface and supports brand schemas", () => {
     const spec = generateOpenApiV1({ title: "BMW Reader API", version: "1.0.0", serverUrl: "http://localhost:3004", selectionSchemas: { BmwSelection: { type: "object" } } });
     expect(Object.keys(spec.paths)).toHaveLength(16);
     expect((spec.paths as Record<string, unknown>)["/v1/metrics/throughput"]).toBeUndefined();
     expect((spec.components?.schemas as Record<string, unknown>)?.BmwSelection).toBeDefined();
     expect(spec.paths["/v1/labours/{requestId}/download"]).toBeDefined();
+  });
+
+  test("emits plain JSON Schema for zod selection schemas and the resume body", () => {
+    const spec = generateOpenApiV1({ title: "Reader API", version: "1.0.0", serverUrl: "http://localhost:3000", selectionSchemas: { Sel: z.object({ date: z.string().optional(), ids: z.array(z.string()).min(1) }) } });
+    const selection = JSON.stringify(spec.components?.schemas?.Sel);
+    expect(selection).not.toContain('"def"');
+    expect(selection).toContain('"ids"');
+    const resume = JSON.stringify((spec.paths as Record<string, any>)["/v1/labours/{requestId}/resume"].post.requestBody);
+    expect(resume).not.toContain('"def"');
+    expect(resume).toContain('"force"');
   });
 
   test("groups every documented operation by tag with English summaries and descriptions", () => {

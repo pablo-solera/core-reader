@@ -8,7 +8,8 @@ import { errorBody } from "./error-middleware.js";
 export type V1RouterOptions = {
   reader: string;
   version: string;
-  manufacturers: string[];
+  /** Static list, or an async source resolved on every /v1/info call (a failing source yields an empty list). */
+  manufacturers: string[] | (() => Promise<string[]>);
   capabilities?: ReaderCapabilities;
   handlers: V1Handlers;
 };
@@ -45,8 +46,11 @@ const forceSchema = z.object({ force: z.boolean().default(false) });
 export function createV1Router(options: V1RouterOptions): Router {
   const router = Router();
   const capabilities = options.capabilities ?? deriveCapabilities(options.handlers);
-  const info: ReaderInfo = { reader: options.reader, version: options.version, contractVersion, manufacturers: options.manufacturers, capabilities };
-  router.get("/info", (_req, res) => res.json(info));
+  const info = { reader: options.reader, version: options.version, contractVersion, capabilities };
+  router.get("/info", withAsync(async (_req, res) => {
+    const manufacturers = typeof options.manufacturers === "function" ? await options.manufacturers().catch(() => []) : options.manufacturers;
+    return res.json({ ...info, manufacturers } satisfies ReaderInfo);
+  }));
 
   const resources: Resource[] = ["labours", "parts"];
   for (const resource of resources) {
