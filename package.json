@@ -34,6 +34,10 @@
       "types": "./dist/application/v1-handlers.d.ts",
       "import": "./dist/application/v1-handlers.js"
     },
+    "./application/list-requests": {
+      "types": "./dist/application/list-requests.d.ts",
+      "import": "./dist/application/list-requests.js"
+    },
     "./application/readiness": {
       "types": "./dist/application/readiness.d.ts",
       "import": "./dist/application/readiness.js"
