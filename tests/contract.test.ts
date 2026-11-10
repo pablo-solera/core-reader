@@ -5,6 +5,7 @@ import { NotAvailableError } from "../src/domain/errors.js";
 import { mapApplicationError } from "../src/interfaces/http/express/error-middleware.js";
 import { createV1Router } from "../src/interfaces/http/express/v1-router.js";
 import { assertV1RouteInventory } from "../src/testing/conformance.js";
+import { z } from "zod";
 import express from "express";
 import { RedisStateStore, type StateRedis } from "../src/infrastructure/redis/state-store.js";
 import { S3Store, type S3Adapter } from "../src/infrastructure/s3/object-storage.js";
@@ -45,6 +46,16 @@ describe("reader API v1 contract", () => {
     expect((spec.paths as Record<string, unknown>)["/v1/metrics/throughput"]).toBeUndefined();
     expect((spec.components?.schemas as Record<string, unknown>)?.BmwSelection).toBeDefined();
     expect(spec.paths["/v1/labours/{requestId}/download"]).toBeDefined();
+  });
+
+  test("emits plain JSON Schema for zod selection schemas and the resume body", () => {
+    const spec = generateOpenApiV1({ title: "Reader API", version: "1.0.0", serverUrl: "http://localhost:3000", selectionSchemas: { Sel: z.object({ date: z.string().optional(), ids: z.array(z.string()).min(1) }) } });
+    const selection = JSON.stringify(spec.components?.schemas?.Sel);
+    expect(selection).not.toContain('"def"');
+    expect(selection).toContain('"ids"');
+    const resume = JSON.stringify((spec.paths as Record<string, any>)["/v1/labours/{requestId}/resume"].post.requestBody);
+    expect(resume).not.toContain('"def"');
+    expect(resume).toContain('"force"');
   });
 
   test("groups every documented operation by tag with English summaries and descriptions", () => {

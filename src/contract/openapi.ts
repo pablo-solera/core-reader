@@ -15,6 +15,14 @@ import {
 
 extendZodWithOpenApi(z);
 
+const isZodSchema = (value: unknown): value is z.ZodType => typeof value === "object" && value !== null && "_zod" in value;
+const toJsonSchema = (value: unknown) => {
+  if (!isZodSchema(value)) return value;
+  const { $schema: _ignored, ...schema } = z.toJSONSchema(value, { target: "openapi-3.0", io: "input" }) as Record<string, unknown>;
+  return schema;
+};
+const resumeBody = toJsonSchema(z.object({ force: z.boolean().default(false) }));
+
 const commonPaths = {
   "/health": { get: { tags: ["System"], summary: "Check process liveness", description: "Returns success while the HTTP process is running. This endpoint does not probe external dependencies.", responses: { "200": { description: "The process is alive." } } } },
   "/ready": { get: { tags: ["System"], summary: "Check service readiness", description: "Checks configured dependencies. A failed check returns 503 with the same status/checks response shape.", responses: { "200": { description: "All required dependencies are available." }, "503": { description: "At least one required dependency is unavailable." } } } },
@@ -28,7 +36,7 @@ const commonPaths = {
   "/v1/labours/{requestId}": { get: { tags: ["Labours"], summary: "Get labour extraction status", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "200": { description: "Request state.", content: { "application/json": { schema: { $ref: "#/components/schemas/RequestState" } } } }, "400": { description: "Invalid request ID." }, "404": { description: "Request not found." } } } },
   "/v1/labours/{requestId}/download": { get: { tags: ["Labours"], summary: "Download a labour artifact", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }, { name: "artifact", in: "query", schema: { type: "string" } }], responses: { "307": { description: "Redirect to a signed download URL." }, "404": { description: "Artifact not found." }, "409": { description: "Artifact not ready or not a downloadable file." } } } },
   "/v1/labours/{requestId}/cancel": { post: { tags: ["Labours"], summary: "Cancel a labour extraction", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "200": { description: "Request cancelled." }, "202": { description: "Cancellation is in progress." }, "404": { description: "Request not found." }, "409": { description: "Request cannot be cancelled." } } } },
-  "/v1/labours/{requestId}/resume": { post: { tags: ["Labours"], summary: "Resume a labour extraction", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], requestBody: { required: false, content: { "application/json": { schema: z.object({ force: z.boolean().default(false) }) } } }, responses: { "202": { description: "The request was queued for resume." }, "404": { description: "No resumable request exists." }, "409": { description: "The request cannot be resumed." } } } },
+  "/v1/labours/{requestId}/resume": { post: { tags: ["Labours"], summary: "Resume a labour extraction", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], requestBody: { required: false, content: { "application/json": { schema: resumeBody } } }, responses: { "202": { description: "The request was queued for resume." }, "404": { description: "No resumable request exists." }, "409": { description: "The request cannot be resumed." } } } },
   "/v1/parts": {
     get: { tags: ["Parts"], summary: "List parts extraction requests", responses: { "200": { description: "A page of parts requests.", content: { "application/json": { schema: { $ref: "#/components/schemas/RequestPage" } } } }, "501": { description: "Parts listing is not supported." } } },
     post: { tags: ["Parts"], summary: "Create a parts extraction request", requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/CreateRequest" } } } }, responses: { "202": { description: "The extraction was queued." }, "501": { description: "Parts extraction is not supported." } } },
@@ -36,11 +44,12 @@ const commonPaths = {
   "/v1/parts/{requestId}": { get: { tags: ["Parts"], summary: "Get parts extraction status", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "200": { description: "Request state.", content: { "application/json": { schema: { $ref: "#/components/schemas/RequestState" } } } }, "404": { description: "Request not found." } } } },
   "/v1/parts/{requestId}/download": { get: { tags: ["Parts"], summary: "Download a parts artifact", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "307": { description: "Redirect to a signed download URL." }, "501": { description: "Download is not supported." } } } },
   "/v1/parts/{requestId}/cancel": { post: { tags: ["Parts"], summary: "Cancel a parts extraction", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "200": { description: "Request cancelled." }, "202": { description: "Cancellation is in progress." }, "501": { description: "Cancellation is not supported." } } } },
-  "/v1/parts/{requestId}/resume": { post: { tags: ["Parts"], summary: "Resume a parts extraction", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], requestBody: { required: false, content: { "application/json": { schema: z.object({ force: z.boolean().default(false) }) } } }, responses: { "202": { description: "The request was queued for resume." }, "501": { description: "Resume is not supported." } } } },
+  "/v1/parts/{requestId}/resume": { post: { tags: ["Parts"], summary: "Resume a parts extraction", parameters: [{ name: "requestId", in: "path", required: true, schema: { type: "string", format: "uuid" } }], requestBody: { required: false, content: { "application/json": { schema: resumeBody } } }, responses: { "202": { description: "The request was queued for resume." }, "501": { description: "Resume is not supported." } } } },
   "/v1/models/options": { get: { tags: ["Models"], summary: "Get model and vehicle options", description: "Discovers manufacturer models and returns reusable selection criteria.", parameters: [{ name: "manufacturer", in: "query", schema: { type: "string" } }, { name: "language", in: "query", schema: { type: "string" } }, { name: "includeRaw", in: "query", schema: { type: "boolean" } }], responses: { "200": { description: "Available filters and models.", content: { "application/json": { schema: { $ref: "#/components/schemas/ModelOptions" } } } }, "400": { description: "Invalid filter combination." }, "502": { description: "The upstream model service failed." } } } },
 };
 
 export type OpenApiPathItem = Record<string, unknown>;
+
 
 export function generateOpenApiV1(options: { title: string; version: string; serverUrl: string; selectionSchemas?: Record<string, unknown>; paths?: Record<string, OpenApiPathItem> }) {
   const registry = new OpenAPIRegistry();
@@ -54,7 +63,7 @@ export function generateOpenApiV1(options: { title: string; version: string; ser
   registry.register("RequestPage", requestPageSchema);
   registry.register("RequestState", requestStateSchema);
   registry.register("RequestSummary", requestSummarySchema);
-  for (const [name, schema] of Object.entries(options.selectionSchemas ?? {})) registry.registerComponent("schemas", name, schema as never);
+  for (const [name, schema] of Object.entries(options.selectionSchemas ?? {})) registry.registerComponent("schemas", name, toJsonSchema(schema) as never);
   const generator = new OpenApiGeneratorV3(registry.definitions);
   const generated = generator.generateDocument({
     openapi: "3.0.3",
