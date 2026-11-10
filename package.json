@@ -3,8 +3,13 @@
   "version": "0.3.1",
   "description": "Shared contract, ports and infrastructure adapters (Express, BullMQ, Redis, S3) for the manufacturer readers.",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/pablo-solera/core-reader.git" },
-  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pablo-solera/core-reader.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "overrides": {
     "@types/node": "24.19.1"
@@ -83,12 +88,28 @@
     "@asteasolutions/zod-to-openapi": "9.1.0"
   },
   "peerDependencies": {
+    "@aws-sdk/client-s3": "^3.1148.0",
+    "@aws-sdk/s3-request-presigner": "^3.1148.0",
+    "@smithy/fetch-http-handler": "^5.8.0",
+    "archiver": "^5.3.2",
     "bullmq": "^6.3.12",
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
     "zod": "^4.6.5"
   },
   "peerDependenciesMeta": {
+    "@aws-sdk/client-s3": {
+      "optional": true
+    },
+    "@aws-sdk/s3-request-presigner": {
+      "optional": true
+    },
+    "@smithy/fetch-http-handler": {
+      "optional": true
+    },
+    "archiver": {
+      "optional": true
+    },
     "bullmq": {
       "optional": true
     },
@@ -97,9 +118,13 @@
     }
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "3.1148.0",
+    "@aws-sdk/s3-request-presigner": "3.1148.0",
+    "@smithy/fetch-http-handler": "5.8.0",
     "@types/bun": "1.4.2",
     "@types/express": "5.0.6",
     "@types/node": "24.19.1",
+    "archiver": "5.3.2",
     "bullmq": "6.3.12",
     "express": "5.2.1",
     "ioredis": "6.0.0",
